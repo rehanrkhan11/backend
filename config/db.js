@@ -1,25 +1,23 @@
 const mongoose = require("mongoose");
 
-// Create a variable to cache the connection
-let isConnected = false; 
+let isConnected = false;
 
 const connectDB = async () => {
-  mongoose.set("strictQuery", true);
-
   if (isConnected) {
-    console.log("=> Using existing database connection");
     return;
+  }
+
+  if (!process.env.MONGO_URI) {
+    throw new Error("MONGO_URI is not defined in environment variables");
   }
 
   try {
     const db = await mongoose.connect(process.env.MONGO_URI);
-
     isConnected = db.connections[0].readyState;
-    console.log(`✅ MongoDB Connected: ${db.connection.host}`);
+    console.log("✅ MongoDB Connected");
   } catch (error) {
-    console.error(`❌ MongoDB Error: ${error.message}`);
-    // In serverless, we usually don't want to process.exit(1) 
-    // as it kills the function instance entirely.
+    console.error("❌ MongoDB Connection Error:", error.message);
+    // DO NOT process.exit(1) here
     throw error; 
   }
 };
