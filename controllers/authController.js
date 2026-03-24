@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const connectDB = require("../config/db"); // 1. Import your connection utility
+const connectDB = require("../config/db"); 
 
 // ── Helper: Generate JWT ────────────────────────────────────
 const generateToken = (id) => {
@@ -12,17 +12,19 @@ const generateToken = (id) => {
 // ── @POST /api/auth/register ────────────────────────────────
 const register = async (req, res) => {
   try {
-    await connectDB(); // 2. Critical: Wait for DB before any Model query
+    await connectDB(); 
 
     const { name, email, password, role, phone, specialization } = req.body;
 
-    // Now this query won't time out
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    // ... (rest of your validation logic)
+    // Role validation
+    if (!["patient", "doctor"].includes(role)) {
+      return res.status(400).json({ message: "Role must be 'patient' or 'doctor'" });
+    }
 
     const user = await User.create({
       name,
@@ -54,7 +56,7 @@ const register = async (req, res) => {
 // ── @POST /api/auth/login ───────────────────────────────────
 const login = async (req, res) => {
   try {
-    await connectDB(); // 3. Also add here for the login route
+    await connectDB(); 
 
     const { email, password } = req.body;
     const user = await User.findOne({ email }).select("+password");
@@ -86,11 +88,14 @@ const login = async (req, res) => {
   }
 };
 
-// ... Apply the same await connectDB() to getMe if needed
+// ── @GET /api/auth/me ───────────────────────────────────────
 const getMe = async (req, res) => {
   try {
-    await connectDB(); // Stay safe for serverless!
-    // req.user is usually set by your 'protect' middleware
+    await connectDB(); 
+    // Ensure the 'protect' middleware has run and populated req.user
+    if (!req.user) {
+        return res.status(401).json({ message: "Not authorized" });
+    }
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
