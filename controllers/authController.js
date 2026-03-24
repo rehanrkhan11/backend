@@ -87,5 +87,19 @@ const login = async (req, res) => {
 };
 
 // ... Apply the same await connectDB() to getMe if needed
+const getMe = async (req, res) => {
+  try {
+    await connectDB(); // Stay safe for serverless!
+    // req.user is usually set by your 'protect' middleware
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error("GetMe error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 module.exports = { register, login, getMe };
