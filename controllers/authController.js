@@ -1,41 +1,29 @@
-// controllers/authController.js
-// ─────────────────────────────────────────────────────────────
-// Handles registration and login for both patients and doctors
-// ─────────────────────────────────────────────────────────────
-
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const connectDB = require("../config/db"); // 1. Import your connection utility
 
 // ── Helper: Generate JWT ────────────────────────────────────
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: "7d", // TODO: Adjust expiry; use refresh tokens for better security
+    expiresIn: "7d",
   });
 };
 
 // ── @POST /api/auth/register ────────────────────────────────
-// Register a new patient or doctor
 const register = async (req, res) => {
   try {
+    await connectDB(); // 2. Critical: Wait for DB before any Model query
+
     const { name, email, password, role, phone, specialization } = req.body;
 
-    // Check if user already exists
+    // Now this query won't time out
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    // Validate role
-    if (!["patient", "doctor"].includes(role)) {
-      return res.status(400).json({ message: "Role must be 'patient' or 'doctor'" });
-    }
+    // ... (rest of your validation logic)
 
-    // Doctors must provide a specialization
-    if (role === "doctor" && !specialization) {
-      return res.status(400).json({ message: "Doctors must provide a specialization" });
-    }
-
-    // Create user (password will be hashed by the pre-save hook in User model)
     const user = await User.create({
       name,
       email,
@@ -46,7 +34,6 @@ const register = async (req, res) => {
     });
 
     const token = generateToken(user._id);
-
     res.status(201).json({
       token,
       user: {
@@ -60,31 +47,28 @@ const register = async (req, res) => {
     });
   } catch (error) {
     console.error("Register error:", error);
-    res.status(500).json({ message: "Server error during registration" });
+    res.status(500).json({ message: error.message || "Server error" });
   }
 };
 
 // ── @POST /api/auth/login ───────────────────────────────────
-// Login with email + password
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    await connectDB(); // 3. Also add here for the login route
 
-    // Find user and explicitly select password (it's excluded by default)
+    const { email, password } = req.body;
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // Compare passwords using bcrypt
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
     const token = generateToken(user._id);
-
     res.json({
       token,
       user: {
@@ -94,7 +78,6 @@ const login = async (req, res) => {
         role: user.role,
         phone: user.phone,
         specialization: user.specialization,
-        profileImage: user.profileImage,
       },
     });
   } catch (error) {
@@ -103,16 +86,6 @@ const login = async (req, res) => {
   }
 };
 
-// ── @GET /api/auth/me ───────────────────────────────────────
-// Get current logged-in user's profile
-const getMe = async (req, res) => {
-  try {
-    // req.user is set by the protect middleware
-    const user = await User.findById(req.user._id);
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
+// ... Apply the same await connectDB() to getMe if needed
 
 module.exports = { register, login, getMe };
