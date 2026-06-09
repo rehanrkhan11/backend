@@ -3,7 +3,7 @@
 // ============================================================
 // Make sure you create a .env file with:
 // MONGO_URI=your_mongodb_connection
-// CLIENT_URL=http://localhost:5173
+// CLIENT_URL=https://frontend-phi-eight-17.vercel.app
 // ============================================================
 
 require("dotenv").config();
@@ -15,16 +15,32 @@ const cors = require("cors");
 const app = express();
 
 // ─── CORS (must be first, before any other middleware) ──────
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL || "*",
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-// Handle preflight OPTIONS requests for all routes
-app.options("*", cors());
+const allowedOrigins = [
+  "https://frontend-phi-eight-17.vercel.app",
+  "http://localhost:5173"
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, postman, or server-to-server)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+// Apply configured options to all incoming requests
+app.use(cors(corsOptions));
+
+// Explicitly handle preflight OPTIONS requests using the same configuration
+app.options("*", cors(corsOptions));
 
 // ─── Middleware ─────────────────────────────────────────────
 app.use(express.json());
