@@ -4,8 +4,11 @@
 // Free tier: 15 requests/min, 1500 requests/day — no billing needed
 // ============================================================
 
+/*const GEMINI_API_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";*/
+
 const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
 
 // System prompt — keeps bot focused on medical topics only
 const MEDICAL_SYSTEM_PROMPT = `You are MediBot, a helpful AI health assistant for a doctor appointment platform called HealthCare+.
